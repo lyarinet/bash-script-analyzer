@@ -5,6 +5,7 @@ interface AnalysisSectionProps {
   title: string;
   children: React.ReactNode;
   icon?: 'check' | 'warning' | 'lightbulb' | 'github';
+  headerAction?: React.ReactNode;
 }
 
 const Icons: Record<string, React.ReactNode> = {
@@ -15,13 +16,16 @@ const Icons: Record<string, React.ReactNode> = {
 };
 
 
-const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children, icon }) => {
+const AnalysisSection: React.FC<AnalysisSectionProps> = ({ title, children, icon, headerAction }) => {
   return (
     <section>
-      <h3 className="text-xl font-semibold text-gray-100 mb-3 flex items-center">
-        {icon && <span className="mr-2">{Icons[icon]}</span>}
-        {title}
-      </h3>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-xl font-semibold text-gray-100 flex items-center">
+          {icon && <span className="mr-2">{Icons[icon]}</span>}
+          {title}
+        </h3>
+        {headerAction}
+      </div>
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
         {children}
       </div>

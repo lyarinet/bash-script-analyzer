@@ -23,4 +23,5 @@ export interface RefactorResponse {
   originalCode: string;
   refactoredCode: string;
   explanation: string;
+  suggestion?: string;
 }

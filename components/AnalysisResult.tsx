@@ -1,10 +1,12 @@
+
 import React, { useState, useCallback } from 'react';
 import { AnalysisResponse, CommandPart, RefactorResponse } from '../types';
 import AnalysisSection from './AnalysisSection';
 import CodeBlock from './CodeBlock';
 import MarkdownPreview from './MarkdownPreview';
-import { getRefactoredCode } from '../services/geminiService';
+import { getRefactoredCode, getRefactoringsForAll } from '../services/geminiService';
 import RefactorModal from './RefactorModal';
+import RefactorAllModal from './RefactorAllModal';
 
 interface AnalysisResultProps {
   analysis: AnalysisResponse;
@@ -57,6 +59,19 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
     suggestion: null,
   });
 
+  const [refactorAllModalState, setRefactorAllModalState] = useState<{
+    isOpen: boolean;
+    isLoading: boolean;
+    error: string | null;
+    data: RefactorResponse[] | null;
+  }>({
+    isOpen: false,
+    isLoading: false,
+    error: null,
+    data: null,
+  });
+
+
   const handleShowFix = useCallback(async (suggestion: string) => {
     setRefactorModalState({
       isOpen: true,
@@ -78,6 +93,47 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
   const handleCloseRefactorModal = () => {
     setRefactorModalState({ isOpen: false, isLoading: false, error: null, data: null, suggestion: null });
   };
+  
+  const handleFixAll = useCallback(async () => {
+    if (!analysis.suggestions || analysis.suggestions.length === 0) return;
+
+    setRefactorAllModalState({
+        isOpen: true,
+        isLoading: true,
+        error: null,
+        data: null,
+    });
+
+    try {
+        const result = await getRefactoringsForAll(scriptContent, analysis.suggestions);
+        setRefactorAllModalState(prev => ({ ...prev, isLoading: false, data: result }));
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+        setRefactorAllModalState(prev => ({ ...prev, isLoading: false, error: errorMessage }));
+    }
+  }, [scriptContent, analysis.suggestions]);
+
+  const handleCloseRefactorAllModal = () => {
+    setRefactorAllModalState({ isOpen: false, isLoading: false, error: null, data: null });
+  };
+  
+  const renderFixAllButton = () => {
+    if (!analysis.suggestions || analysis.suggestions.length === 0) return null;
+    return (
+        <button
+            onClick={handleFixAll}
+            className="text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-md transition-all duration-200 flex items-center gap-1.5 disabled:bg-indigo-800 disabled:cursor-not-allowed"
+            aria-label="Fix all suggestions"
+            disabled={refactorAllModalState.isLoading}
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 011-1h.5a1.5 1.5 0 000-3H6a1 1 0 01-1-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
+            </svg>
+            {refactorAllModalState.isLoading ? 'Fixing...' : 'Fix All'}
+        </button>
+    );
+  };
+
 
   return (
     <>
@@ -98,7 +154,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
           </ul>
         </AnalysisSection>
 
-        <AnalysisSection title="Improvement Suggestions" icon="lightbulb">
+        <AnalysisSection title="Improvement Suggestions" icon="lightbulb" headerAction={renderFixAllButton()}>
           <ul className="space-y-3">
             {analysis.suggestions.map((suggestion, index) => (
               <li key={index} className="flex justify-between items-center text-gray-300">
@@ -178,6 +234,15 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
             data={refactorModalState.data}
             suggestion={refactorModalState.suggestion}
             onClose={handleCloseRefactorModal}
+        />
+      )}
+      {refactorAllModalState.isOpen && (
+        <RefactorAllModal
+            isOpen={refactorAllModalState.isOpen}
+            isLoading={refactorAllModalState.isLoading}
+            error={refactorAllModalState.error}
+            data={refactorAllModalState.data}
+            onClose={handleCloseRefactorAllModal}
         />
       )}
     </>

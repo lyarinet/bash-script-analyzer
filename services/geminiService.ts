@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResponse, RefactorResponse } from '../types';
 
@@ -195,5 +196,96 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
             throw new Error(`Failed to get refactoring from Gemini API: ${error.message}`);
         }
         throw new Error("An unknown error occurred while communicating with the Gemini API for refactoring.");
+    }
+};
+
+export const getRefactoringsForAll = async (script: string, suggestions: string[]): Promise<RefactorResponse[]> => {
+    const refactorAllSchema = {
+        type: Type.ARRAY,
+        description: "A list of refactoring objects, one for each suggestion.",
+        items: {
+            type: Type.OBJECT,
+            properties: {
+                suggestion: {
+                    type: Type.STRING,
+                    description: "The improvement suggestion this refactoring is for, from the provided list."
+                },
+                originalCode: {
+                  type: Type.STRING,
+                  description: "The original code snippet from the script that needs to be changed.",
+                },
+                refactoredCode: {
+                  type: Type.STRING,
+                  description: "The new, improved code snippet that implements the suggestion.",
+                },
+                explanation: {
+                    type: Type.STRING,
+                    description: "A brief explanation of what was changed and why."
+                }
+            },
+            required: ["suggestion", "originalCode", "refactoredCode", "explanation"],
+        }
+    };
+
+    try {
+        const suggestionsList = suggestions.map(s => `- ${s}`).join('\n');
+        const result = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `You are a bash script refactoring expert.
+Given the following bash script:
+--- SCRIPT START ---
+${script}
+--- SCRIPT END ---
+
+And the following list of improvement suggestions:
+--- SUGGESTIONS START ---
+${suggestionsList}
+--- SUGGESTIONS END ---
+
+For each suggestion, please provide a JSON object containing the original suggestion text, the original code snippet to be replaced, the refactored code snippet that implements the suggestion, and a brief explanation of the change.
+Return a single JSON array containing these objects.
+Each object in the array must have keys: "suggestion", "originalCode", "refactoredCode", and "explanation".
+Focus only on the code snippet relevant to the suggestion. Do not provide the full script back.`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: refactorAllSchema,
+            }
+        });
+
+        const jsonText = result.text.trim();
+        const parsedResponse = JSON.parse(jsonText);
+
+        if (!Array.isArray(parsedResponse)) {
+            throw new Error("API response for all refactorings is not an array.");
+        }
+
+        parsedResponse.forEach(item => {
+            if (
+                typeof item.suggestion === 'undefined' ||
+                typeof item.originalCode === 'undefined' ||
+                typeof item.refactoredCode === 'undefined' ||
+                typeof item.explanation === 'undefined'
+            ) {
+                throw new Error("An item in the refactoring array is missing required fields.");
+            }
+            if (typeof item.originalCode === 'string') {
+                item.originalCode = item.originalCode.replace(/\\n/g, '\n');
+            }
+            if (typeof item.refactoredCode === 'string') {
+                item.refactoredCode = item.refactoredCode.replace(/\\n/g, '\n');
+            }
+            if (typeof item.explanation === 'string') {
+                item.explanation = item.explanation.replace(/\\n/g, '\n');
+            }
+        });
+
+        return parsedResponse as RefactorResponse[];
+
+    } catch (error) {
+        console.error("Error getting all refactored code with Gemini API:", error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to get all refactorings from Gemini API: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred while communicating with the Gemini API for all refactorings.");
     }
 };
