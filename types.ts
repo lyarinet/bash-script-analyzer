@@ -18,3 +18,9 @@ export interface AnalysisResponse {
   commandBreakdown: CommandPart[];
   githubRepo: GithubRepoSuggestion;
 }
+
+export interface RefactorResponse {
+  originalCode: string;
+  refactoredCode: string;
+  explanation: string;
+}

@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResponse } from '../types';
+import { AnalysisResponse, RefactorResponse } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -108,4 +108,63 @@ export const analyzeScript = async (script: string): Promise<AnalysisResponse> =
     }
     throw new Error("An unknown error occurred while communicating with the Gemini API.");
   }
+};
+
+const refactorResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    originalCode: {
+      type: Type.STRING,
+      description: "The original code snippet from the script that needs to be changed.",
+    },
+    refactoredCode: {
+      type: Type.STRING,
+      description: "The new, improved code snippet that implements the suggestion.",
+    },
+    explanation: {
+        type: Type.STRING,
+        description: "A brief explanation of what was changed and why."
+    }
+  },
+  required: ["originalCode", "refactoredCode", "explanation"],
+};
+
+export const getRefactoredCode = async (script: string, suggestion: string): Promise<RefactorResponse> => {
+    try {
+        const result = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `You are a bash script refactoring expert.
+Given the following bash script:
+--- SCRIPT START ---
+${script}
+--- SCRIPT END ---
+
+And the following improvement suggestion:
+'${suggestion}'
+
+Please provide a JSON object containing the original code snippet to be replaced, the refactored code snippet that implements the suggestion, and a brief explanation of the change.
+The JSON object must have keys: "originalCode", "refactoredCode", and "explanation".
+Focus only on the code snippet relevant to the suggestion. Do not provide the full script back.`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: refactorResponseSchema,
+            }
+        });
+
+        const jsonText = result.text.trim();
+        const parsedResponse = JSON.parse(jsonText);
+
+        if (!parsedResponse.originalCode && typeof parsedResponse.refactoredCode === 'undefined' && !parsedResponse.explanation) {
+            throw new Error("API response for refactoring is missing required fields.");
+        }
+
+        return parsedResponse as RefactorResponse;
+
+    } catch (error) {
+        console.error("Error getting refactored code with Gemini API:", error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to get refactoring from Gemini API: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred while communicating with the Gemini API for refactoring.");
+    }
 };

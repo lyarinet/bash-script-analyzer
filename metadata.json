@@ -1,5 +1,6 @@
 {
   "name": "Bash Script Analyzer",
   "description": "An advanced tool that uses the Gemini API to analyze shell scripts, providing a detailed breakdown of functionality, strengths, weaknesses, and potential improvements.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "prompt": ""
 }
