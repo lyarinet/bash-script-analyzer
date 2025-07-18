@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResponse, RefactorResponse } from '../types';
 
@@ -98,6 +97,20 @@ export const analyzeScript = async (script: string): Promise<AnalysisResponse> =
     ) {
       throw new Error("API response is missing required fields.");
     }
+    
+    // Clean up string fields that might have escaped newlines from the API response.
+    // This ensures that content like READMEs and file trees render with proper line breaks.
+    if (parsedResponse.githubRepo) {
+        if (typeof parsedResponse.githubRepo.readmeContent === 'string') {
+            parsedResponse.githubRepo.readmeContent = parsedResponse.githubRepo.readmeContent.replace(/\\n/g, '\n');
+        }
+        if (typeof parsedResponse.githubRepo.gitignoreContent === 'string') {
+            parsedResponse.githubRepo.gitignoreContent = parsedResponse.githubRepo.gitignoreContent.replace(/\\n/g, '\n');
+        }
+        if (typeof parsedResponse.githubRepo.fileStructure === 'string') {
+            parsedResponse.githubRepo.fileStructure = parsedResponse.githubRepo.fileStructure.replace(/\\n/g, '\n');
+        }
+    }
 
     return parsedResponse as AnalysisResponse;
 
@@ -154,8 +167,24 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
         const jsonText = result.text.trim();
         const parsedResponse = JSON.parse(jsonText);
 
-        if (!parsedResponse.originalCode && typeof parsedResponse.refactoredCode === 'undefined' && !parsedResponse.explanation) {
+        // Stricter validation to ensure all required fields are present.
+        if (
+            typeof parsedResponse.originalCode === 'undefined' ||
+            typeof parsedResponse.refactoredCode === 'undefined' ||
+            typeof parsedResponse.explanation === 'undefined'
+        ) {
             throw new Error("API response for refactoring is missing required fields.");
+        }
+        
+        // Clean up multiline strings that might have escaped newlines.
+        if (typeof parsedResponse.originalCode === 'string') {
+            parsedResponse.originalCode = parsedResponse.originalCode.replace(/\\n/g, '\n');
+        }
+        if (typeof parsedResponse.refactoredCode === 'string') {
+            parsedResponse.refactoredCode = parsedResponse.refactoredCode.replace(/\\n/g, '\n');
+        }
+        if (typeof parsedResponse.explanation === 'string') {
+            parsedResponse.explanation = parsedResponse.explanation.replace(/\\n/g, '\n');
         }
 
         return parsedResponse as RefactorResponse;
