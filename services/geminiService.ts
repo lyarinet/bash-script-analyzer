@@ -248,7 +248,7 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
         }
         
         const cleanString = (str: unknown) => (typeof str === 'string' ? str.replace(/\\n/g, '\n') : str);
-        parsedResponse.originalCode = cleanString(parsedResponse.originalCode);
+        parsedResponse.originalCode = (cleanString(parsedResponse.originalCode) as string).trim();
         parsedResponse.refactoredCode = cleanString(parsedResponse.refactoredCode);
         parsedResponse.explanation = cleanString(parsedResponse.explanation);
 
@@ -317,7 +317,7 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
             if ( !item.suggestion || !item.originalCode || !item.refactoredCode || !item.explanation ) {
                 throw new Error("An item in the refactoring array is missing required fields.");
             }
-            item.originalCode = cleanString(item.originalCode);
+            item.originalCode = (cleanString(item.originalCode) as string).trim();
             item.refactoredCode = cleanString(item.refactoredCode);
             item.explanation = cleanString(item.explanation);
         });
