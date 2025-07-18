@@ -81,7 +81,7 @@ const responseSchema = {
     },
     mermaidFlowchart: {
         type: Type.STRING,
-        description: "A Mermaid.js flowchart diagram representing the script's logic. CRITICAL: For node text containing quotes, the text MUST be enclosed in quotes AND internal quotes MUST be escaped as '&quot;'. CORRECT: id[\"echo &quot;Hello&quot;\"]. INCORRECT: id[echo \"Hello\"]. This prevents parsing errors."
+        description: "A Mermaid.js flowchart diagram representing the script's logic. CRITICAL RULE: ALL node text MUST be enclosed in double quotes using the `id[\"...\"]` syntax. Any internal double quotes MUST be escaped as '&quot;'. Example: `A[\"echo &quot;Hello&quot;\"]`. Do NOT use other syntax like `A(text)`. This is mandatory."
     },
     githubRepo: {
       type: Type.OBJECT,
@@ -109,10 +109,16 @@ Analysis Dimensions:
 5.  **Portability Analysis**: Check for "bashisms" and non-POSIX features. Provide a portability score (1-10), a summary, and POSIX-compliant alternatives.
 6.  **Test Generation**: Generate a simple test suite using the 'bats-core' framework. The tests should cover the script's basic functionality.
 7.  **Translation**: Translate the script's core logic into Python and PowerShell.
-8.  **Logic Visualization**: Generate a flowchart of the script's logic using Mermaid.js syntax. CRITICAL RULE: For any node text containing double quotes, the entire text block MUST be enclosed in double quotes, and the internal quotes MUST be escaped using the HTML entity '&quot;'.
-    - **CORRECT EXAMPLE**: \`id["echo &quot;Hello World&quot;"]\`
-    - **INCORRECT EXAMPLE**: \`id[echo "Hello World"]\`
-    This rule is mandatory to prevent parsing errors.
+8.  **Logic Visualization**: Generate a flowchart of the script's logic using Mermaid.js syntax.
+    CRITICAL RULE: ALL node text, without exception, MUST be enclosed in double quotes using the format \`id["..."]\`.
+    Any double quotes *inside* the node text MUST be escaped as the HTML entity \`&quot;\`.
+    - **CORRECT**: \`A["Start"]\`
+    - **CORRECT**: \`B["Set GREETING=&quot;Hello&quot;"]\`
+    - **CORRECT**: \`C["echo &quot;User provided: $1&quot;"]\`
+    - **INCORRECT**: \`A(Start)\`
+    - **INCORRECT**: \`B[Set GREETING="Hello"]\`
+    - **INCORRECT**: \`C(echo "User provided: $1")\`
+    This rule is mandatory to prevent all parsing errors.
 9.  **Repo Generation**: Suggest files for a new GitHub repo: a detailed README.md, a standard .gitignore, a directory tree, a Dockerfile to run the script, and a UNIX-style man page.
 
 SCRIPT TO ANALYZE:
