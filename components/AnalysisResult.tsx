@@ -174,7 +174,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
           </ul>
         </AnalysisSection>
 
-        <AnalysisSection title="FFmpeg Command Breakdown">
+        <AnalysisSection title="Command Breakdown">
           <CommandBreakdownTable parts={analysis.commandBreakdown} />
         </AnalysisSection>
 
