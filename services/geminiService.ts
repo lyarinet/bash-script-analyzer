@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResponse, RefactorResponse } from '../types';
 
@@ -13,71 +12,116 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
-    summary: {
-      type: Type.STRING,
-      description: "A brief, one-paragraph summary of the script's purpose and main functionality.",
-    },
-    strengths: {
-      type: Type.ARRAY,
-      description: "A list of positive aspects of the script, such as good error handling, modularity, or clear structure.",
-      items: { type: Type.STRING },
-    },
-    weaknesses: {
-      type: Type.ARRAY,
-      description: "A list of potential issues, risks, or areas lacking in the script, such as security vulnerabilities or potential bugs.",
-      items: { type: Type.STRING },
-    },
-    suggestions: {
-      type: Type.ARRAY,
-      description: "A list of specific, actionable suggestions for improving the script.",
-      items: { type: Type.STRING },
-    },
+    summary: { type: Type.STRING, description: "A brief, one-paragraph summary of the script's purpose and main functionality." },
+    strengths: { type: Type.ARRAY, description: "A list of positive aspects of the script.", items: { type: Type.STRING } },
+    weaknesses: { type: Type.ARRAY, description: "A list of potential issues or risks.", items: { type: Type.STRING } },
+    suggestions: { type: Type.ARRAY, description: "A list of specific, actionable suggestions for improving the script.", items: { type: Type.STRING } },
     commandBreakdown: {
       type: Type.ARRAY,
-      description: "A detailed breakdown of any major commands the script constructs. Each part of the command should be explained.",
+      description: "A detailed breakdown of any major commands the script constructs.",
       items: {
-        type: Type.OBJECT,
-        properties: {
-          part: {
-            type: Type.STRING,
-            description: "The specific command flag or argument (e.g., '-l', '--verbose').",
-          },
-          explanation: {
-            type: Type.STRING,
-            description: "A clear explanation of what this part of the command does.",
-          },
-        },
-        required: ["part", "explanation"],
+        type: Type.OBJECT, properties: {
+          part: { type: Type.STRING, description: "The command flag or argument." },
+          explanation: { type: Type.STRING, description: "Explanation of this part." },
+        }, required: ["part", "explanation"],
       },
+    },
+    securityAudit: {
+        type: Type.ARRAY,
+        description: "A security audit identifying vulnerabilities like command injection, hardcoded secrets, etc.",
+        items: {
+            type: Type.OBJECT, properties: {
+                vulnerability: { type: Type.STRING, description: "The name of the vulnerability found."},
+                recommendation: { type: Type.STRING, description: "How to fix the vulnerability."}
+            }, required: ["vulnerability", "recommendation"]
+        }
+    },
+    performanceProfile: {
+        type: Type.ARRAY,
+        description: "An analysis of potential performance bottlenecks like inefficient loops or commands.",
+        items: {
+            type: Type.OBJECT, properties: {
+                issue: { type: Type.STRING, description: "The performance issue identified."},
+                suggestion: { type: Type.STRING, description: "How to optimize it."}
+            }, required: ["issue", "suggestion"]
+        }
+    },
+    portabilityAnalysis: {
+        type: Type.OBJECT,
+        description: "Analysis of compatibility with other shells (POSIX compliance).",
+        properties: {
+            score: { type: Type.NUMBER, description: "A score from 1 (low) to 10 (high) for portability."},
+            summary: { type: Type.STRING, description: "A summary of the portability."},
+            issues: {
+                type: Type.ARRAY, items: {
+                    type: Type.OBJECT, properties: {
+                        code: { type: Type.STRING, description: "The non-portable code."},
+                        suggestion: { type: Type.STRING, description: "The POSIX-compliant alternative."}
+                    }, required: ["code", "suggestion"]
+                }
+            }
+        }, required: ["score", "summary", "issues"]
+    },
+    testSuite: {
+        type: Type.OBJECT,
+        description: "A generated test suite for the script using a common framework.",
+        properties: {
+            framework: { type: Type.STRING, description: "The testing framework used, e.g., 'bats-core'."},
+            content: { type: Type.STRING, description: "The full content of the test script file."}
+        }, required: ["framework", "content"]
+    },
+    translations: {
+        type: Type.OBJECT,
+        description: "Translation of the script's logic into other languages.",
+        properties: {
+            python: { type: Type.STRING, description: "The script's logic translated to Python."},
+            powershell: { type: Type.STRING, description: "The script's logic translated to PowerShell."}
+        }, required: ["python", "powershell"]
+    },
+    mermaidFlowchart: {
+        type: Type.STRING,
+        description: "A Mermaid.js flowchart diagram representing the script's logic."
     },
     githubRepo: {
       type: Type.OBJECT,
       description: "A suggested structure for a GitHub repository for this script.",
       properties: {
-        readmeContent: {
-          type: Type.STRING,
-          description: "The full content for a README.md file, formatted in Markdown. It should include a title, description, features, and usage sections."
-        },
-        gitignoreContent: {
-          type: Type.STRING,
-          description: "The full content for a standard .gitignore file suitable for a shell script project."
-        },
-        fileStructure: {
-          type: Type.STRING,
-          description: "A simple text-based tree representation of the suggested directory structure."
-        }
+        readmeContent: { type: Type.STRING, description: "Full content for a README.md file." },
+        gitignoreContent: { type: Type.STRING, description: "Full content for a .gitignore file." },
+        fileStructure: { type: Type.STRING, description: "A text-based tree of the directory structure." },
+        dockerfileContent: { type: Type.STRING, description: "Full content for a Dockerfile to containerize the script."},
+        manPageContent: { type: Type.STRING, description: "Content for a UNIX-style man page for the script."}
       },
-      required: ["readmeContent", "gitignoreContent", "fileStructure"],
+      required: ["readmeContent", "gitignoreContent", "fileStructure", "dockerfileContent", "manPageContent"],
     }
   },
-  required: ["summary", "strengths", "weaknesses", "suggestions", "commandBreakdown", "githubRepo"],
+  required: ["summary", "strengths", "weaknesses", "suggestions", "commandBreakdown", "securityAudit", "performanceProfile", "portabilityAnalysis", "testSuite", "translations", "mermaidFlowchart", "githubRepo"],
 };
+
+const analysisPrompt = `You are an expert-level bash script analyzer. Your goal is to provide a comprehensive, multi-faceted analysis of the provided script. Generate a single JSON object that conforms to the provided schema.
+
+Analysis Dimensions:
+1.  **Core Analysis**: Provide a summary, strengths, weaknesses, and improvement suggestions.
+2.  **Command Breakdown**: Deconstruct any major commands.
+3.  **Security Audit**: Act as a security expert. Identify vulnerabilities like command injection, hardcoded secrets, insecure temp files, and permission issues. Provide clear recommendations.
+4.  **Performance Profile**: Identify bottlenecks like inefficient commands (e.g., \`cat | grep\`) or slow loops. Suggest optimizations.
+5.  **Portability Analysis**: Check for "bashisms" and non-POSIX features. Provide a portability score (1-10), a summary, and POSIX-compliant alternatives.
+6.  **Test Generation**: Generate a simple test suite using the 'bats-core' framework. The tests should cover the script's basic functionality.
+7.  **Translation**: Translate the script's core logic into Python and PowerShell.
+8.  **Logic Visualization**: Generate a flowchart of the script's logic using Mermaid.js syntax. IMPORTANT: Inside node text (e.g., A["..."]), any double quotes must be escaped as '&quot;'. For example, to represent the command 'echo "Hello World"', the node should be 'id["echo &quot;Hello World&quot;"]'. This is critical to prevent parsing errors.
+9.  **Repo Generation**: Suggest files for a new GitHub repo: a detailed README.md, a standard .gitignore, a directory tree, a Dockerfile to run the script, and a UNIX-style man page.
+
+SCRIPT TO ANALYZE:
+\`\`\`bash
+_SCRIPT_CONTENT_
+\`\`\``;
+
 
 export const analyzeScript = async (script: string): Promise<AnalysisResponse> => {
   try {
     const result = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Analyze the following bash script. Provide a detailed breakdown of its functionality, strengths, weaknesses, and suggestions for improvement. Also, provide a detailed breakdown of any major commands it generates. Finally, based on the script, generate a suggested GitHub repository structure. This should include: 1. The full content for a README.md file, formatted in Markdown. 2. The full content for a standard .gitignore file for a shell script project. 3. A simple text-based tree representation of the suggested directory structure.\n\nSCRIPT:\n\`\`\`bash\n${script}\n\`\`\``,
+      contents: analysisPrompt.replace('_SCRIPT_CONTENT_', script),
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
@@ -87,31 +131,43 @@ export const analyzeScript = async (script: string): Promise<AnalysisResponse> =
     const jsonText = result.text.trim();
     const parsedResponse = JSON.parse(jsonText);
     
-    // Basic validation to ensure the parsed object matches the expected structure
+    // Deeper validation
     if (
       !parsedResponse.summary ||
       !Array.isArray(parsedResponse.strengths) ||
       !Array.isArray(parsedResponse.weaknesses) ||
       !Array.isArray(parsedResponse.suggestions) ||
       !Array.isArray(parsedResponse.commandBreakdown) ||
+      !Array.isArray(parsedResponse.securityAudit) ||
+      !Array.isArray(parsedResponse.performanceProfile) ||
+      !parsedResponse.portabilityAnalysis ||
+      !parsedResponse.testSuite ||
+      !parsedResponse.translations ||
+      !parsedResponse.mermaidFlowchart ||
       !parsedResponse.githubRepo
     ) {
       throw new Error("API response is missing required fields.");
     }
     
-    // Clean up string fields that might have escaped newlines from the API response.
-    // This ensures that content like READMEs and file trees render with proper line breaks.
+    // Clean up multiline string fields that might have escaped newlines
+    const cleanString = (str: unknown) => (typeof str === 'string' ? str.replace(/\\n/g, '\n') : str);
+    
     if (parsedResponse.githubRepo) {
-        if (typeof parsedResponse.githubRepo.readmeContent === 'string') {
-            parsedResponse.githubRepo.readmeContent = parsedResponse.githubRepo.readmeContent.replace(/\\n/g, '\n');
-        }
-        if (typeof parsedResponse.githubRepo.gitignoreContent === 'string') {
-            parsedResponse.githubRepo.gitignoreContent = parsedResponse.githubRepo.gitignoreContent.replace(/\\n/g, '\n');
-        }
-        if (typeof parsedResponse.githubRepo.fileStructure === 'string') {
-            parsedResponse.githubRepo.fileStructure = parsedResponse.githubRepo.fileStructure.replace(/\\n/g, '\n');
-        }
+        parsedResponse.githubRepo.readmeContent = cleanString(parsedResponse.githubRepo.readmeContent);
+        parsedResponse.githubRepo.gitignoreContent = cleanString(parsedResponse.githubRepo.gitignoreContent);
+        parsedResponse.githubRepo.fileStructure = cleanString(parsedResponse.githubRepo.fileStructure);
+        parsedResponse.githubRepo.dockerfileContent = cleanString(parsedResponse.githubRepo.dockerfileContent);
+        parsedResponse.githubRepo.manPageContent = cleanString(parsedResponse.githubRepo.manPageContent);
     }
+    if(parsedResponse.testSuite) {
+        parsedResponse.testSuite.content = cleanString(parsedResponse.testSuite.content);
+    }
+    if(parsedResponse.translations) {
+        parsedResponse.translations.python = cleanString(parsedResponse.translations.python);
+        parsedResponse.translations.powershell = cleanString(parsedResponse.translations.powershell);
+    }
+    parsedResponse.mermaidFlowchart = cleanString(parsedResponse.mermaidFlowchart);
+
 
     return parsedResponse as AnalysisResponse;
 
@@ -168,7 +224,6 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
         const jsonText = result.text.trim();
         const parsedResponse = JSON.parse(jsonText);
 
-        // Stricter validation to ensure all required fields are present.
         if (
             typeof parsedResponse.originalCode === 'undefined' ||
             typeof parsedResponse.refactoredCode === 'undefined' ||
@@ -177,16 +232,10 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
             throw new Error("API response for refactoring is missing required fields.");
         }
         
-        // Clean up multiline strings that might have escaped newlines.
-        if (typeof parsedResponse.originalCode === 'string') {
-            parsedResponse.originalCode = parsedResponse.originalCode.replace(/\\n/g, '\n');
-        }
-        if (typeof parsedResponse.refactoredCode === 'string') {
-            parsedResponse.refactoredCode = parsedResponse.refactoredCode.replace(/\\n/g, '\n');
-        }
-        if (typeof parsedResponse.explanation === 'string') {
-            parsedResponse.explanation = parsedResponse.explanation.replace(/\\n/g, '\n');
-        }
+        const cleanString = (str: unknown) => (typeof str === 'string' ? str.replace(/\\n/g, '\n') : str);
+        parsedResponse.originalCode = cleanString(parsedResponse.originalCode);
+        parsedResponse.refactoredCode = cleanString(parsedResponse.refactoredCode);
+        parsedResponse.explanation = cleanString(parsedResponse.explanation);
 
         return parsedResponse as RefactorResponse;
 
@@ -206,22 +255,10 @@ export const getRefactoringsForAll = async (script: string, suggestions: string[
         items: {
             type: Type.OBJECT,
             properties: {
-                suggestion: {
-                    type: Type.STRING,
-                    description: "The improvement suggestion this refactoring is for, from the provided list."
-                },
-                originalCode: {
-                  type: Type.STRING,
-                  description: "The original code snippet from the script that needs to be changed.",
-                },
-                refactoredCode: {
-                  type: Type.STRING,
-                  description: "The new, improved code snippet that implements the suggestion.",
-                },
-                explanation: {
-                    type: Type.STRING,
-                    description: "A brief explanation of what was changed and why."
-                }
+                suggestion: { type: Type.STRING, description: "The improvement suggestion this refactoring is for." },
+                originalCode: { type: Type.STRING, description: "The original code snippet to be changed." },
+                refactoredCode: { type: Type.STRING, description: "The new, improved code snippet." },
+                explanation: { type: Type.STRING, description: "A brief explanation of the change." }
             },
             required: ["suggestion", "originalCode", "refactoredCode", "explanation"],
         }
@@ -258,25 +295,16 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
         if (!Array.isArray(parsedResponse)) {
             throw new Error("API response for all refactorings is not an array.");
         }
+        
+        const cleanString = (str: unknown) => (typeof str === 'string' ? str.replace(/\\n/g, '\n') : str);
 
         parsedResponse.forEach(item => {
-            if (
-                typeof item.suggestion === 'undefined' ||
-                typeof item.originalCode === 'undefined' ||
-                typeof item.refactoredCode === 'undefined' ||
-                typeof item.explanation === 'undefined'
-            ) {
+            if ( !item.suggestion || !item.originalCode || !item.refactoredCode || !item.explanation ) {
                 throw new Error("An item in the refactoring array is missing required fields.");
             }
-            if (typeof item.originalCode === 'string') {
-                item.originalCode = item.originalCode.replace(/\\n/g, '\n');
-            }
-            if (typeof item.refactoredCode === 'string') {
-                item.refactoredCode = item.refactoredCode.replace(/\\n/g, '\n');
-            }
-            if (typeof item.explanation === 'string') {
-                item.explanation = item.explanation.replace(/\\n/g, '\n');
-            }
+            item.originalCode = cleanString(item.originalCode);
+            item.refactoredCode = cleanString(item.refactoredCode);
+            item.explanation = cleanString(item.explanation);
         });
 
         return parsedResponse as RefactorResponse[];
