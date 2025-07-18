@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AnalysisResponse, CommandPart, RefactorResponse, SecurityIssue, PerformanceIssue, PortabilityIssue } from '../types';
+import { AnalysisResponse, RefactorResponse, AnalysisSettings } from '../types';
 import AnalysisSection from './AnalysisSection';
 import CodeBlock from './CodeBlock';
 import MarkdownPreview from './MarkdownPreview';
@@ -14,6 +14,7 @@ interface AnalysisResultProps {
   scriptContent: string;
   onApplyFix: (originalCode: string, refactoredCode: string) => void;
   onApplyAllFixes: (fixes: RefactorResponse[]) => void;
+  analysisSettings: AnalysisSettings;
 }
 
 const Table: React.FC<{ headers: string[], rows: (string | React.ReactNode)[][] }> = ({ headers, rows }) => (
@@ -44,8 +45,9 @@ const Table: React.FC<{ headers: string[], rows: (string | React.ReactNode)[][] 
 );
 
 
-const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent, onApplyFix, onApplyAllFixes }) => {
+const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent, onApplyFix, onApplyAllFixes, analysisSettings }) => {
   const [showReadmePreview, setShowReadmePreview] = useState(false);
+  const [showPrPreview, setShowPrPreview] = useState(false);
   const [activeTranslation, setActiveTranslation] = useState<'python' | 'powershell'>('python');
 
   const [refactorModalState, setRefactorModalState] = useState<{
@@ -107,16 +109,15 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
   return (
     <>
       <div className="space-y-6 animate-fade-in">
-        <AnalysisSection title="Summary"><p className="text-gray-300 leading-relaxed">{analysis.summary}</p></AnalysisSection>
+        {analysisSettings.summary && <AnalysisSection title="Summary"><p className="text-gray-300 leading-relaxed">{analysis.summary}</p></AnalysisSection>}
         
-        <AnalysisSection title="Interactive Q&A" icon="chat">
-            <ChatAnalysis scriptContent={scriptContent} />
-        </AnalysisSection>
+        {analysisSettings.interactiveQa && <AnalysisSection title="Interactive Q&A" icon="chat"><ChatAnalysis scriptContent={scriptContent} /></AnalysisSection>}
 
-        <AnalysisSection title="Strengths" icon="check"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></AnalysisSection>
-        <AnalysisSection title="Weaknesses & Risks" icon="warning"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul></AnalysisSection>
+        {analysisSettings.strengths && <AnalysisSection title="Strengths" icon="check"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></AnalysisSection>}
+        
+        {analysisSettings.weaknesses && <AnalysisSection title="Weaknesses & Risks" icon="warning"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul></AnalysisSection>}
 
-        <AnalysisSection title="Improvement Suggestions" icon="lightbulb" headerAction={renderFixAllButton()}>
+        {analysisSettings.suggestions && <AnalysisSection title="Improvement Suggestions" icon="lightbulb" headerAction={renderFixAllButton()}>
           <ul className="space-y-3">
             {analysis.suggestions.map((suggestion, index) => (
               <li key={index} className="flex justify-between items-center text-gray-300 gap-4">
@@ -128,12 +129,12 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
               </li>
             ))}
           </ul>
-        </AnalysisSection>
+        </AnalysisSection>}
 
-        <AnalysisSection title="Security Audit" icon="shield"><Table headers={["Vulnerability", "Recommendation"]} rows={analysis.securityAudit.map(i => [i.vulnerability, i.recommendation])} /></AnalysisSection>
-        <AnalysisSection title="Performance Profile" icon="bolt"><Table headers={["Issue", "Suggestion"]} rows={analysis.performanceProfile.map(i => [i.issue, i.suggestion])} /></AnalysisSection>
+        {analysisSettings.security && <AnalysisSection title="Security Audit" icon="shield"><Table headers={["Vulnerability", "Recommendation"]} rows={analysis.securityAudit.map(i => [i.vulnerability, i.recommendation])} /></AnalysisSection>}
+        {analysisSettings.performance && <AnalysisSection title="Performance Profile" icon="bolt"><Table headers={["Issue", "Suggestion"]} rows={analysis.performanceProfile.map(i => [i.issue, i.suggestion])} /></AnalysisSection>}
         
-        <AnalysisSection title="Portability & Compatibility" icon="globe">
+        {analysisSettings.portability && <AnalysisSection title="Portability & Compatibility" icon="globe">
             <div className='space-y-4'>
                 <div className='flex items-baseline gap-4 bg-gray-900/50 p-3 rounded-lg'>
                     <h4 className='text-md font-semibold text-gray-200'>Portability Score:</h4>
@@ -142,36 +143,50 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
                 </div>
                 <Table headers={["Non-Portable Code", "POSIX-Compliant Suggestion"]} rows={analysis.portabilityAnalysis.issues.map(i => [<code className='text-sm text-indigo-300 bg-gray-900/50 px-2 py-1 rounded'>{i.code}</code>, <code className='text-sm text-green-300 bg-gray-900/50 px-2 py-1 rounded'>{i.suggestion}</code>])} />
             </div>
-        </AnalysisSection>
+        </AnalysisSection>}
 
-        <AnalysisSection title="Command Breakdown"><Table headers={["Command/Flag", "Explanation"]} rows={analysis.commandBreakdown.map(p => [<code className="text-sm text-indigo-300 bg-gray-900/50 px-2 py-1 rounded">{p.part}</code>, p.explanation])} /></AnalysisSection>
+        {analysisSettings.commandBreakdown && <AnalysisSection title="Command Breakdown"><Table headers={["Command/Flag", "Explanation"]} rows={analysis.commandBreakdown.map(p => [<code className="text-sm text-indigo-300 bg-gray-900/50 px-2 py-1 rounded">{p.part}</code>, p.explanation])} /></AnalysisSection>}
 
-        <AnalysisSection title="Script Logic Visualization" icon="flowchart"><MermaidChart chart={analysis.mermaidFlowchart} /></AnalysisSection>
+        {analysisSettings.logicVisualization && <AnalysisSection title="Script Logic Visualization" icon="flowchart"><MermaidChart chart={analysis.mermaidFlowchart} /></AnalysisSection>}
 
-        <AnalysisSection title="Generated Test Suite" icon="beaker"><CodeBlock fileName={`test_script.bats (${analysis.testSuite.framework})`} content={analysis.testSuite.content} /></AnalysisSection>
+        {analysisSettings.testSuite && <AnalysisSection title="Generated Test Suite" icon="beaker"><CodeBlock fileName={`test_script.bats (${analysis.testSuite.framework})`} content={analysis.testSuite.content} /></AnalysisSection>}
 
-        <AnalysisSection title="Translations" icon="translate">
+        {analysisSettings.translations && <AnalysisSection title="Translations" icon="translate">
             <div className='flex mb-2 border-b border-gray-700'>
                 <button onClick={() => setActiveTranslation('python')} className={`px-4 py-2 text-sm font-medium ${activeTranslation === 'python' ? 'border-b-2 border-indigo-400 text-white' : 'text-gray-400'}`}>Python</button>
                 <button onClick={() => setActiveTranslation('powershell')} className={`px-4 py-2 text-sm font-medium ${activeTranslation === 'powershell' ? 'border-b-2 border-indigo-400 text-white' : 'text-gray-400'}`}>PowerShell</button>
             </div>
             {activeTranslation === 'python' && <CodeBlock fileName="translation.py" content={analysis.translations.python} />}
             {activeTranslation === 'powershell' && <CodeBlock fileName="translation.ps1" content={analysis.translations.powershell} />}
-        </AnalysisSection>
+        </AnalysisSection>}
 
-        <AnalysisSection title="GitHub Repository Suggestion" icon="github">
+        {analysisSettings.github && <AnalysisSection title="GitHub Assets" icon="github">
             <div className="space-y-4">
+                <div className="border border-gray-700 rounded-lg p-4">
+                    <h4 className="text-md font-semibold text-gray-200 mb-2">Suggested Pull Request</h4>
+                    <div className="bg-gray-900/70 p-3 rounded-md mb-3">
+                        <p className="font-mono text-sm text-gray-400">Title:</p>
+                        <p className="font-semibold text-gray-200">{analysis.githubRepo.pullRequestTitle}</p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <h5 className="font-mono text-sm text-gray-400">Body:</h5>
+                        <button onClick={() => setShowPrPreview(true)} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-indigo-500/10" aria-label="Preview Pull Request Body"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>Preview</button>
+                    </div>
+                    <CodeBlock fileName="pr_body.md" content={analysis.githubRepo.pullRequestBody} />
+                </div>
+                
                 <h4 className="text-md font-semibold text-gray-200">Suggested File Structure</h4><CodeBlock fileName="Directory Tree" content={analysis.githubRepo.fileStructure} />
                 <div className="flex justify-between items-center"><h4 className="text-md font-semibold text-gray-200">README.md</h4><button onClick={() => setShowReadmePreview(true)} className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-indigo-500/10" aria-label="Preview README.md"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>Preview</button></div><CodeBlock fileName="README.md" content={analysis.githubRepo.readmeContent} />
                 <h4 className="text-md font-semibold text-gray-200">.gitignore</h4><CodeBlock fileName=".gitignore" content={analysis.githubRepo.gitignoreContent} />
                 <h4 className="text-md font-semibold text-gray-200">Dockerfile</h4><CodeBlock fileName="Dockerfile" content={analysis.githubRepo.dockerfileContent} />
                 <h4 className="text-md font-semibold text-gray-200">Man Page</h4><CodeBlock fileName="script.1" content={analysis.githubRepo.manPageContent} />
             </div>
-        </AnalysisSection>
+        </AnalysisSection>}
 
         <style>{`@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }`}</style>
       </div>
-      {showReadmePreview && <MarkdownPreview content={analysis.githubRepo.readmeContent} onClose={() => setShowReadmePreview(false)} />}
+      {showReadmePreview && <MarkdownPreview title="README.md Preview" content={analysis.githubRepo.readmeContent} onClose={() => setShowReadmePreview(false)} />}
+      {showPrPreview && <MarkdownPreview title="Pull Request Preview" content={analysis.githubRepo.pullRequestBody} onClose={() => setShowPrPreview(false)} />}
       {refactorModalState.isOpen && <RefactorModal {...refactorModalState} onClose={handleCloseRefactorModal} onApplyFix={onApplyFix} />}
       {refactorAllModalState.isOpen && <RefactorAllModal {...refactorAllModalState} onClose={handleCloseRefactorAllModal} onApplyAllFixes={onApplyAllFixes} />}
     </>

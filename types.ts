@@ -1,4 +1,10 @@
 
+export interface Script {
+  id: number;
+  name: string;
+  content: string;
+}
+
 export interface CommandPart {
   part: string;
   explanation: string;
@@ -36,6 +42,8 @@ export interface GithubRepoSuggestion {
   fileStructure: string;
   dockerfileContent: string;
   manPageContent: string;
+  pullRequestTitle: string;
+  pullRequestBody: string;
 }
 
 export interface AnalysisResponse {
@@ -61,6 +69,22 @@ export interface RefactorResponse {
   refactoredCode: string;
   explanation: string;
   suggestion?: string;
+}
+
+export interface AnalysisSettings {
+    summary: boolean;
+    interactiveQa: boolean;
+    strengths: boolean;
+    weaknesses: boolean;
+    suggestions: boolean;
+    security: boolean;
+    performance: boolean;
+    portability: boolean;
+    commandBreakdown: boolean;
+    logicVisualization: boolean;
+    testSuite: boolean;
+    translations: boolean;
+    github: boolean;
 }
 
 export interface ChatMessage {

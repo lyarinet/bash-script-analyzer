@@ -1,19 +1,19 @@
+
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { marked } from 'https://esm.sh/marked@12.0.2';
 
 interface MarkdownPreviewProps {
+  title: string;
   content: string;
   onClose: () => void;
 }
 
-const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onClose }) => {
+const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ title, content, onClose }) => {
   const [htmlContent, setHtmlContent] = useState('');
 
   useEffect(() => {
     if (content) {
-      // marked.parse() is synchronous by default and returns the parsed HTML directly.
-      // The previous code was incorrectly trying to use .then() on a string.
       setHtmlContent(marked.parse(content) as string);
     }
   }, [content]);
@@ -43,7 +43,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onClose }) =
         onClick={(e) => e.stopPropagation()}
       >
         <header className="p-4 border-b border-gray-700 flex justify-between items-center flex-shrink-0">
-          <h2 id="preview-title" className="text-lg font-semibold text-gray-200">README.md Preview</h2>
+          <h2 id="preview-title" className="text-lg font-semibold text-gray-200">{title}</h2>
           <button 
             onClick={onClose} 
             className="text-gray-400 hover:text-white transition-colors"

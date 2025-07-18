@@ -4,7 +4,7 @@ import React from 'react';
 interface AnalysisSectionProps {
   title: string;
   children: React.ReactNode;
-  icon?: 'check' | 'warning' | 'lightbulb' | 'github' | 'shield' | 'bolt' | 'globe' | 'beaker' | 'translate' | 'flowchart' | 'chat';
+  icon?: 'check' | 'warning' | 'lightbulb' | 'github' | 'shield' | 'bolt' | 'globe' | 'beaker' | 'translate' | 'flowchart' | 'chat' | 'pr';
   headerAction?: React.ReactNode;
 }
 
@@ -20,6 +20,7 @@ const Icons: Record<string, React.ReactNode> = {
     translate: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor"><path d="M5 8a1 1 0 100 2h1.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L6.586 8H5z" /><path d="M10 3a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0V6h-1a1 1 0 110-2h1V4a1 1 0 011-1z" /><path d="M15.707 14.293a1 1 0 01-1.414 0l-1.293-1.293H11a1 1 0 110-2h1.586l-1.293-1.293a1 1 0 111.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 010-1.414L13.414 15H15a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" /></svg>,
     flowchart: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 3a1 1 0 01.993.883L13 4v2h2a1 1 0 01.993.883L16 7v2a1 1 0 01-1 1h-1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2H9a1 1 0 01-1-1V7a1 1 0 011-1h2V4a1 1 0 011-1zM4 3a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V3zm0 10a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1v-2zM10 13a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z" clipRule="evenodd" /></svg>,
     chat: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-violet-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.08-3.242A1.957 1.957 0 002 12c0-3.866 3.582-7 8-7s8 3.134 8 7zM4.417 11a1 1 0 00-1.833.834L3.5 12a1 1 0 001.833-.834L4.5 11h-.083zM10 11a1 1 0 100-2 1 1 0 000 2zm3.583-1a1 1 0 10-1.833.834L12.5 11a1 1 0 101.833-.834L13.5 10h.083z" clipRule="evenodd" /></svg>,
+    pr: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L8.586 12H4a1 1 0 110-2h4.586l-1.293-1.293a1 1 0 011.414-1.414l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414 0z" clipRule="evenodd" /><path fillRule="evenodd" d="M10 3a1 1 0 011 1v1.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 5.586V4a1 1 0 011-1z" clipRule="evenodd" /><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>,
 };
 
 

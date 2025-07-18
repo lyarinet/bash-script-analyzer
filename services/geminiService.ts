@@ -91,9 +91,11 @@ const responseSchema = {
         gitignoreContent: { type: Type.STRING, description: "Full content for a .gitignore file." },
         fileStructure: { type: Type.STRING, description: "A text-based tree of the directory structure." },
         dockerfileContent: { type: Type.STRING, description: "Full content for a Dockerfile to containerize the script."},
-        manPageContent: { type: Type.STRING, description: "Content for a UNIX-style man page for the script."}
+        manPageContent: { type: Type.STRING, description: "Content for a UNIX-style man page for the script."},
+        pullRequestTitle: { type: Type.STRING, description: "A concise, well-formed title for a pull request that would apply the improvement suggestions." },
+        pullRequestBody: { type: Type.STRING, description: "A detailed markdown body for a pull request, explaining the changes and referencing the suggestions." },
       },
-      required: ["readmeContent", "gitignoreContent", "fileStructure", "dockerfileContent", "manPageContent"],
+      required: ["readmeContent", "gitignoreContent", "fileStructure", "dockerfileContent", "manPageContent", "pullRequestTitle", "pullRequestBody"],
     }
   },
   required: ["summary", "strengths", "weaknesses", "suggestions", "commandBreakdown", "securityAudit", "performanceProfile", "portabilityAnalysis", "testSuite", "translations", "mermaidFlowchart", "githubRepo"],
@@ -120,6 +122,7 @@ Analysis Dimensions:
     - **INCORRECT**: \`C(echo "User provided: $1")\`
     This rule is mandatory to prevent all parsing errors.
 9.  **Repo Generation**: Suggest files for a new GitHub repo: a detailed README.md, a standard .gitignore, a directory tree, a Dockerfile to run the script, and a UNIX-style man page.
+10. **Pull Request Suggestion**: Generate a title and markdown body for a GitHub Pull Request that would implement the suggested refactorings. The body should clearly summarize the purpose of the changes.
 
 SCRIPT TO ANALYZE:
 \`\`\`bash
@@ -154,7 +157,8 @@ export const analyzeScript = async (script: string): Promise<AnalysisResponse> =
       !parsedResponse.testSuite ||
       !parsedResponse.translations ||
       !parsedResponse.mermaidFlowchart ||
-      !parsedResponse.githubRepo
+      !parsedResponse.githubRepo ||
+      !parsedResponse.githubRepo.pullRequestTitle
     ) {
       throw new Error("API response is missing required fields.");
     }
@@ -168,6 +172,7 @@ export const analyzeScript = async (script: string): Promise<AnalysisResponse> =
         parsedResponse.githubRepo.fileStructure = cleanString(parsedResponse.githubRepo.fileStructure);
         parsedResponse.githubRepo.dockerfileContent = cleanString(parsedResponse.githubRepo.dockerfileContent);
         parsedResponse.githubRepo.manPageContent = cleanString(parsedResponse.githubRepo.manPageContent);
+        parsedResponse.githubRepo.pullRequestBody = cleanString(parsedResponse.githubRepo.pullRequestBody);
     }
     if(parsedResponse.testSuite) {
         parsedResponse.testSuite.content = cleanString(parsedResponse.testSuite.content);

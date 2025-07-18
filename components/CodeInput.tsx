@@ -1,27 +1,73 @@
 
 import React from 'react';
+import { Script } from '../types';
 
 interface CodeInputProps {
-  scriptContent: string;
-  setScriptContent: (content: string) => void;
+  scripts: Script[];
+  activeScriptId: number;
+  onActiveScriptChange: (id: number) => void;
+  onScriptContentChange: (id: number, content: string) => void;
+  onAddScript: () => void;
+  onRemoveScript: (id: number) => void;
   onAnalyze: () => void;
+  onAnalyzeAll: () => void;
   isLoading: boolean;
 }
 
-const CodeInput: React.FC<CodeInputProps> = ({ scriptContent, setScriptContent, onAnalyze, isLoading }) => {
+const CodeInput: React.FC<CodeInputProps> = ({ 
+    scripts, activeScriptId, onActiveScriptChange, onScriptContentChange, 
+    onAddScript, onRemoveScript, onAnalyze, onAnalyzeAll, isLoading 
+}) => {
+
+  const activeScript = scripts.find(s => s.id === activeScriptId);
+
   return (
     <div className="bg-gray-800/50 rounded-xl shadow-2xl flex flex-col h-full">
-      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-200">Script to Analyze</h2>
+      <div className="p-2 border-b border-gray-700 flex justify-between items-center">
+        <div className="flex items-center gap-1 overflow-x-auto">
+            {scripts.map(script => (
+                <button
+                    key={script.id}
+                    onClick={() => onActiveScriptChange(script.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap ${
+                        activeScriptId === script.id 
+                            ? 'bg-gray-700 text-white' 
+                            : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                    }`}
+                >
+                    {script.name}
+                    {scripts.length > 1 && (
+                         <span 
+                            onClick={(e) => { e.stopPropagation(); onRemoveScript(script.id); }}
+                            className="text-gray-500 hover:text-red-400"
+                            aria-label={`Remove ${script.name}`}
+                        >
+                            &times;
+                        </span>
+                    )}
+                </button>
+            ))}
+            <button onClick={onAddScript} className="ml-2 text-gray-400 hover:text-white" aria-label="Add new script">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+            </button>
+        </div>
       </div>
       <textarea
         className="w-full flex-grow p-4 bg-gray-900 text-gray-300 font-mono text-sm resize-none focus:outline-none rounded-b-xl"
-        value={scriptContent}
-        onChange={(e) => setScriptContent(e.target.value)}
+        value={activeScript?.content || ''}
+        onChange={(e) => activeScript && onScriptContentChange(activeScript.id, e.target.value)}
         placeholder="Paste your bash script here..."
         spellCheck="false"
+        key={activeScriptId}
       />
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-gray-700 grid grid-cols-2 gap-3">
+        <button
+          onClick={onAnalyzeAll}
+          disabled={isLoading}
+          className="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-500 disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors duration-300 flex items-center justify-center"
+        >
+          Analyze All
+        </button>
         <button
           onClick={onAnalyze}
           disabled={isLoading}
@@ -36,7 +82,7 @@ const CodeInput: React.FC<CodeInputProps> = ({ scriptContent, setScriptContent, 
               Analyzing...
             </>
           ) : (
-            'Analyze Script'
+            'Analyze Active Script'
           )}
         </button>
       </div>
