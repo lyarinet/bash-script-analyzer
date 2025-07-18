@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResponse, RefactorResponse } from '../types';
 
@@ -80,7 +81,7 @@ const responseSchema = {
     },
     mermaidFlowchart: {
         type: Type.STRING,
-        description: "A Mermaid.js flowchart diagram representing the script's logic."
+        description: "A Mermaid.js flowchart diagram representing the script's logic. CRITICAL: For node text containing quotes, the text MUST be enclosed in quotes AND internal quotes MUST be escaped as '&quot;'. CORRECT: id[\"echo &quot;Hello&quot;\"]. INCORRECT: id[echo \"Hello\"]. This prevents parsing errors."
     },
     githubRepo: {
       type: Type.OBJECT,
@@ -108,7 +109,10 @@ Analysis Dimensions:
 5.  **Portability Analysis**: Check for "bashisms" and non-POSIX features. Provide a portability score (1-10), a summary, and POSIX-compliant alternatives.
 6.  **Test Generation**: Generate a simple test suite using the 'bats-core' framework. The tests should cover the script's basic functionality.
 7.  **Translation**: Translate the script's core logic into Python and PowerShell.
-8.  **Logic Visualization**: Generate a flowchart of the script's logic using Mermaid.js syntax. IMPORTANT: Inside node text (e.g., A["..."]), any double quotes must be escaped as '&quot;'. For example, to represent the command 'echo "Hello World"', the node should be 'id["echo &quot;Hello World&quot;"]'. This is critical to prevent parsing errors.
+8.  **Logic Visualization**: Generate a flowchart of the script's logic using Mermaid.js syntax. CRITICAL RULE: For any node text containing double quotes, the entire text block MUST be enclosed in double quotes, and the internal quotes MUST be escaped using the HTML entity '&quot;'.
+    - **CORRECT EXAMPLE**: \`id["echo &quot;Hello World&quot;"]\`
+    - **INCORRECT EXAMPLE**: \`id[echo "Hello World"]\`
+    This rule is mandatory to prevent parsing errors.
 9.  **Repo Generation**: Suggest files for a new GitHub repo: a detailed README.md, a standard .gitignore, a directory tree, a Dockerfile to run the script, and a UNIX-style man page.
 
 SCRIPT TO ANALYZE:
@@ -315,5 +319,37 @@ Focus only on the code snippet relevant to the suggestion. Do not provide the fu
             throw new Error(`Failed to get all refactorings from Gemini API: ${error.message}`);
         }
         throw new Error("An unknown error occurred while communicating with the Gemini API for all refactorings.");
+    }
+};
+
+
+export const askQuestionAboutScript = async (script: string, question: string): Promise<string> => {
+    try {
+        const result = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `You are an intelligent assistant integrated into a bash script analysis tool. Your purpose is to answer user questions specifically about the bash script provided below.
+
+RULES:
+- Base all your answers strictly on the provided script content. Do not invent functionality that isn't present.
+- If the question is unclear or unrelated to the script, politely state that you can only answer questions about the provided script.
+- Keep your answers concise and to the point.
+- Use markdown for formatting, especially for code snippets (\` \` for inline code, and \`\`\`bash ... \`\`\` for code blocks).
+
+--- SCRIPT CONTENT ---
+${script}
+--- END SCRIPT CONTENT ---
+
+USER QUESTION: "${question}"
+
+Your Answer:`,
+        });
+
+        return result.text;
+    } catch (error) {
+        console.error("Error asking question with Gemini API:", error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to get answer from Gemini API: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred while communicating with the Gemini API for Q&A.");
     }
 };

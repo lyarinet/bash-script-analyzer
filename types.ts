@@ -62,3 +62,8 @@ export interface RefactorResponse {
   explanation: string;
   suggestion?: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

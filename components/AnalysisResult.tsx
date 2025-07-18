@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { AnalysisResponse, CommandPart, RefactorResponse, SecurityIssue, PerformanceIssue, PortabilityIssue } from '../types';
 import AnalysisSection from './AnalysisSection';
@@ -8,6 +7,7 @@ import { getRefactoredCode, getRefactoringsForAll } from '../services/geminiServ
 import RefactorModal from './RefactorModal';
 import RefactorAllModal from './RefactorAllModal';
 import MermaidChart from './MermaidChart';
+import ChatAnalysis from './ChatAnalysis';
 
 interface AnalysisResultProps {
   analysis: AnalysisResponse;
@@ -108,6 +108,11 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, scriptContent
     <>
       <div className="space-y-6 animate-fade-in">
         <AnalysisSection title="Summary"><p className="text-gray-300 leading-relaxed">{analysis.summary}</p></AnalysisSection>
+        
+        <AnalysisSection title="Interactive Q&A" icon="chat">
+            <ChatAnalysis scriptContent={scriptContent} />
+        </AnalysisSection>
+
         <AnalysisSection title="Strengths" icon="check"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></AnalysisSection>
         <AnalysisSection title="Weaknesses & Risks" icon="warning"><ul className="list-disc list-inside space-y-2 text-gray-300">{analysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul></AnalysisSection>
 
